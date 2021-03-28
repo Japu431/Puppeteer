@@ -1,35 +1,40 @@
-const puppeteer = require("puppeteer");
-const fs = require("fs");
+const puppeteer = require('puppeteer');
+const fs = require('fs');
+const crypto = require("crypto");
 
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.goto("https://www.instagram.com/");
+const id = crypto.randomBytes(16).toString("hex");
 
-  const imgList = await page.evaluate(() => {
-    const NodeList = document.querySelectorAll("img");
+let scrape = async () => {
+  const browser = await puppeteer.launch()
+  const page = await browser.newPage()
+  await page.goto('http://books.toscrape.com/');
 
-    console.log(NodeList);
+  page.click('h3 > a');
 
-    const imgArray = [...NodeList];
+  await page.waitForNavigation()
+  await page.screenshot({ path: `./src/img/${id}.jpg` })
 
-    console.log(imgArray);
+  const title = await page.$eval(
+    'div.product_main h1', divs => divs.innerText
+  )
 
-    const imgList = imgArray.map(({ src }) => {
-      console.log(src);
-      ({
-        src,
-      });
-    });
+  const price = await page.$eval(
+    'div.product_main .price_color', divs => divs.innerText
+  )
 
-    console.log(imgList);
-    return imgList;
-  });
+  const book = { title, price }
 
-  fs.writeFile("web.json", JSON.stringify(imgList, null, 2), (err) => {
-    if (err) throw new Error("something went wrong");
+  fs.writeFile("web.json", JSON.stringify(book, null, 2), (err) => {
+    if (err) throw new Error("Erro!!");
 
-    console.log("Well done!");
+    console.log("Sucesso!!");
   });
   await browser.close();
-})();
+
+  return book;
+};
+
+scrape().then((value) => {
+    console.log(value)
+})
+
